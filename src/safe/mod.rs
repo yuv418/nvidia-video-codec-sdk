@@ -12,14 +12,8 @@ mod session;
 
 pub use api::{EncodeAPI, ENCODE_API};
 pub use buffer::{
-    Bitstream,
-    BitstreamLock,
-    Buffer,
-    BufferLock,
-    EncoderInput,
-    EncoderOutput,
-    RegisteredResource,
+    Bitstream, BitstreamLock, Buffer, BufferLock, EncoderInput, EncoderOutput, RegisteredResource,
 };
 pub use encoder::Encoder;
 pub use result::{EncodeError, ErrorKind};
-pub use session::{EncodePictureParams, Session};
+pub use session::{CodecPictureParams, EncodePictureParams, Session};

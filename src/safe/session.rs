@@ -10,22 +10,12 @@ use std::fmt::Debug;
 use super::{api::ENCODE_API, encoder::Encoder, result::EncodeError};
 use crate::{
     sys::nvEncodeAPI::{
-        GUID,
-        NV_ENC_BUFFER_FORMAT,
-        NV_ENC_CODEC_AV1_GUID,
-        NV_ENC_CODEC_H264_GUID,
-        NV_ENC_CODEC_HEVC_GUID,
-        NV_ENC_CODEC_PIC_PARAMS,
-        NV_ENC_PIC_PARAMS,
-        NV_ENC_PIC_PARAMS_AV1,
-        NV_ENC_PIC_PARAMS_H264,
-        NV_ENC_PIC_PARAMS_HEVC,
-        NV_ENC_PIC_PARAMS_VER,
-        NV_ENC_PIC_STRUCT,
+        GUID, NV_ENC_BUFFER_FORMAT, NV_ENC_CODEC_AV1_GUID, NV_ENC_CODEC_H264_GUID,
+        NV_ENC_CODEC_HEVC_GUID, NV_ENC_CODEC_PIC_PARAMS, NV_ENC_PIC_PARAMS, NV_ENC_PIC_PARAMS_AV1,
+        NV_ENC_PIC_PARAMS_H264, NV_ENC_PIC_PARAMS_HEVC, NV_ENC_PIC_PARAMS_VER, NV_ENC_PIC_STRUCT,
         NV_ENC_PIC_TYPE,
     },
-    EncoderInput,
-    EncoderOutput,
+    EncoderInput, EncoderOutput,
 };
 
 /// An encoding session to create input/output buffers and encode frames.
@@ -175,6 +165,7 @@ impl Session {
         &self,
         input_buffer: &mut I,
         output_bitstream: &mut O,
+        encode_pic_flags: u32,
         params: EncodePictureParams,
     ) -> Result<(), EncodeError> {
         if let Some(codec_params) = &params.codec_params {
@@ -196,6 +187,7 @@ impl Session {
             inputTimeStamp: params.input_timestamp,
             codecPicParams: params.codec_params.map(Into::into).unwrap_or_default(),
             pictureType: params.picture_type,
+            encodePicFlags: encode_pic_flags,
             ..Default::default()
         };
         unsafe { (ENCODE_API.encode_picture)(self.encoder.ptr, &mut encode_pic_params) }
