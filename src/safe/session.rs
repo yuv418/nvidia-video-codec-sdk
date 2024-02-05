@@ -5,7 +5,7 @@
 //! frames. The [`Session`] also stores some information such as the encode
 //! width and height so that you do not have to keep repeating it each time.
 
-use std::fmt::Debug;
+use std::{fmt::Debug, rc::Rc};
 
 use super::{api::ENCODE_API, encoder::Encoder, result::EncodeError};
 use crate::{
@@ -25,7 +25,7 @@ use crate::{
 /// send an empty EOS frame to flush the encoder.
 #[derive(Debug)]
 pub struct Session {
-    pub(crate) encoder: Encoder,
+    pub(crate) encoder: Rc<Encoder>,
     pub(crate) width: u32,
     pub(crate) height: u32,
     pub(crate) buffer_format: NV_ENC_BUFFER_FORMAT,

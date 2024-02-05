@@ -4,7 +4,7 @@
 //! encoder API. This module also defines builders for some of the parameter
 //! structs used by the interface.
 
-use std::{ffi::c_void, ptr, sync::Arc};
+use std::{ffi::c_void, ptr, rc::Rc, sync::Arc};
 
 use cudarc::driver::CudaContext;
 
@@ -455,7 +455,7 @@ impl Encoder {
         let height = initialize_params.encodeHeight;
         unsafe { (ENCODE_API.initialize_encoder)(self.ptr, initialize_params) }.result(&self)?;
         Ok(Session {
-            encoder: self,
+            encoder: Rc::new(self),
             width,
             height,
             buffer_format,
