@@ -39,7 +39,7 @@ fn main() {
     if cfg!(feature = "ci-check") {
         return;
     }
-    rerun_if_changed();
+    // rerun_if_changed();
     let cuda_root = find_cuda_root()
         .canonicalize()
         .expect("Could not canonicalize path.");

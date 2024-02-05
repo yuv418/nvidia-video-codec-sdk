@@ -1,25 +1,16 @@
 //! Defines traits and types for dealing with input and output buffers.
 
-use std::{ffi::c_void, ptr};
+use std::{ffi::c_void, ptr, rc::Rc};
 
 use cudarc::driver::{DevicePtr, MappedBuffer};
 
 use super::{api::ENCODE_API, encoder::Encoder, result::EncodeError, session::Session};
 use crate::sys::nvEncodeAPI::{
-    NV_ENC_BUFFER_FORMAT,
-    NV_ENC_CREATE_BITSTREAM_BUFFER,
-    NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
-    NV_ENC_CREATE_INPUT_BUFFER,
-    NV_ENC_CREATE_INPUT_BUFFER_VER,
-    NV_ENC_INPUT_RESOURCE_TYPE,
-    NV_ENC_LOCK_BITSTREAM,
-    NV_ENC_LOCK_BITSTREAM_VER,
-    NV_ENC_LOCK_INPUT_BUFFER,
-    NV_ENC_LOCK_INPUT_BUFFER_VER,
-    NV_ENC_MAP_INPUT_RESOURCE,
-    NV_ENC_MAP_INPUT_RESOURCE_VER,
-    NV_ENC_PIC_TYPE,
-    NV_ENC_REGISTER_RESOURCE,
+    NV_ENC_BUFFER_FORMAT, NV_ENC_CREATE_BITSTREAM_BUFFER, NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
+    NV_ENC_CREATE_INPUT_BUFFER, NV_ENC_CREATE_INPUT_BUFFER_VER, NV_ENC_INPUT_RESOURCE_TYPE,
+    NV_ENC_LOCK_BITSTREAM, NV_ENC_LOCK_BITSTREAM_VER, NV_ENC_LOCK_INPUT_BUFFER,
+    NV_ENC_LOCK_INPUT_BUFFER_VER, NV_ENC_MAP_INPUT_RESOURCE, NV_ENC_MAP_INPUT_RESOURCE_VER,
+    NV_ENC_PIC_TYPE, NV_ENC_REGISTER_RESOURCE,
 };
 
 /// If a type implements this trait it means it is a valid input buffer
@@ -109,7 +100,7 @@ impl Session {
         Ok(Buffer {
             ptr: create_input_buffer_params.inputBuffer,
             pitch: self.width,
-            encoder: &self.encoder,
+            encoder: self.encoder.clone(),
         })
     }
 
@@ -272,15 +263,15 @@ impl Session {
 ///
 /// The buffer is automatically destroyed when dropped.
 #[derive(Debug)]
-pub struct Buffer<'a> {
+pub struct Buffer {
     pub(crate) ptr: *mut c_void,
     pitch: u32,
-    encoder: &'a Encoder,
+    encoder: Rc<Encoder>,
 }
 
-unsafe impl Send for Buffer<'_> {}
+unsafe impl Send for Buffer {}
 
-impl<'a> Buffer<'a> {
+impl Buffer {
     /// Lock the input buffer.
     ///
     /// On a successful lock you get a [`BufferLock`] which can be used to write
@@ -339,7 +330,7 @@ impl<'a> Buffer<'a> {
     ///     .unwrap();
     /// unsafe { input_buffer.lock().unwrap().write(&[0; DATA_LEN]) };
     /// ```
-    pub fn lock<'b>(&'b mut self) -> Result<BufferLock<'b, 'a>, EncodeError> {
+    pub fn lock<'b>(&'b mut self) -> Result<BufferLock<'b>, EncodeError> {
         self.lock_inner(true)
     }
 
@@ -360,12 +351,12 @@ impl<'a> Buffer<'a> {
     /// [`ErrorKind::LockBusy`](super::ErrorKind::LockBusy) then that means the
     /// lock is still busy and the client should retry in a few
     /// milliseconds.
-    pub fn try_lock<'b>(&'b mut self) -> Result<BufferLock<'b, 'a>, EncodeError> {
+    pub fn try_lock<'b>(&'b mut self) -> Result<BufferLock<'b>, EncodeError> {
         self.lock_inner(false)
     }
 
     #[inline]
-    fn lock_inner<'b>(&'b mut self, wait: bool) -> Result<BufferLock<'b, 'a>, EncodeError> {
+    fn lock_inner<'b>(&'b mut self, wait: bool) -> Result<BufferLock<'b>, EncodeError> {
         let mut lock_input_buffer_params = NV_ENC_LOCK_INPUT_BUFFER {
             version: NV_ENC_LOCK_INPUT_BUFFER_VER,
             inputBuffer: self.ptr,
@@ -375,7 +366,7 @@ impl<'a> Buffer<'a> {
             lock_input_buffer_params.set_doNotWait(1);
         }
         unsafe { (ENCODE_API.lock_input_buffer)(self.encoder.ptr, &mut lock_input_buffer_params) }
-            .result(self.encoder)?;
+            .result(&self.encoder)?;
 
         let data_ptr = lock_input_buffer_params.bufferDataPtr;
         let pitch = lock_input_buffer_params.pitch;
@@ -389,15 +380,15 @@ impl<'a> Buffer<'a> {
     }
 }
 
-impl Drop for Buffer<'_> {
+impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe { (ENCODE_API.destroy_input_buffer)(self.encoder.ptr, self.ptr) }
-            .result(self.encoder)
+            .result(&self.encoder)
             .expect("The encoder and buffer pointers should be valid.");
     }
 }
 
-impl EncoderInput for Buffer<'_> {
+impl EncoderInput for Buffer {
     fn pitch(&self) -> u32 {
         self.pitch
     }
@@ -414,14 +405,14 @@ impl EncoderInput for Buffer<'_> {
 /// it automatically unlocks the buffer then the lock goes out of scope.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
-pub struct BufferLock<'a, 'b> {
-    buffer: &'a Buffer<'b>,
+pub struct BufferLock<'a> {
+    buffer: &'a Buffer,
     data_ptr: *mut c_void,
     #[allow(dead_code)]
     pitch: u32,
 }
 
-impl BufferLock<'_, '_> {
+impl BufferLock<'_> {
     /// Write data to the buffer.
     ///
     /// # Safety
@@ -440,10 +431,10 @@ impl BufferLock<'_, '_> {
     }
 }
 
-impl Drop for BufferLock<'_, '_> {
+impl Drop for BufferLock<'_> {
     fn drop(&mut self) {
         unsafe { (ENCODE_API.unlock_input_buffer)(self.buffer.encoder.ptr, self.buffer.ptr) }
-            .result(self.buffer.encoder)
+            .result(&self.buffer.encoder)
             .expect("The encoder and buffer pointers should be valid.");
     }
 }

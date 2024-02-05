@@ -4,23 +4,15 @@
 //! encoder API. This module also defines builders for some of the parameter
 //! structs used by the interface.
 
-use std::{ffi::c_void, ptr, sync::Arc};
+use std::{ffi::c_void, ptr, rc::Rc, sync::Arc};
 
 use cudarc::driver::CudaDevice;
 
 use super::{api::ENCODE_API, result::EncodeError, session::Session};
 use crate::sys::nvEncodeAPI::{
-    GUID,
-    NVENCAPI_VERSION,
-    NV_ENC_BUFFER_FORMAT,
-    NV_ENC_CONFIG,
-    NV_ENC_CONFIG_VER,
-    NV_ENC_DEVICE_TYPE,
-    NV_ENC_INITIALIZE_PARAMS,
-    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
-    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
-    NV_ENC_PRESET_CONFIG,
-    NV_ENC_PRESET_CONFIG_VER,
+    GUID, NVENCAPI_VERSION, NV_ENC_BUFFER_FORMAT, NV_ENC_CONFIG, NV_ENC_CONFIG_VER,
+    NV_ENC_DEVICE_TYPE, NV_ENC_INITIALIZE_PARAMS, NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
+    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER, NV_ENC_PRESET_CONFIG, NV_ENC_PRESET_CONFIG_VER,
     NV_ENC_TUNING_INFO,
 };
 
@@ -459,7 +451,7 @@ impl Encoder {
         unsafe { (ENCODE_API.initialize_encoder)(self.ptr, &mut initialize_params) }
             .result(&self)?;
         Ok(Session {
-            encoder: self,
+            encoder: Rc::new(self),
             width,
             height,
             buffer_format,
