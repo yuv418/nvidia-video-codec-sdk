@@ -168,7 +168,7 @@ impl Session {
         .result(&self.encoder)?;
         Ok(Bitstream {
             ptr: create_bitstream_buffer_params.bitstreamBuffer,
-            encoder: &self.encoder,
+            encoder: self.encoder.clone(),
         })
     }
 
@@ -442,14 +442,14 @@ impl Drop for BufferLock<'_> {
 ///
 /// The buffer is automatically destroyed when dropped.
 #[derive(Debug)]
-pub struct Bitstream<'a> {
+pub struct Bitstream {
     pub(crate) ptr: *mut c_void,
-    encoder: &'a Encoder,
+    encoder: Rc<Encoder>,
 }
 
-unsafe impl Send for Bitstream<'_> {}
+unsafe impl Send for Bitstream {}
 
-impl Bitstream<'_> {
+impl Bitstream {
     /// Lock the output bitstream.
     ///
     /// On a successful lock you get a [`BitstreamLock`] which can be used to
@@ -496,7 +496,7 @@ impl Bitstream<'_> {
             lock_bitstream_buffer_params.set_doNotWait(1);
         }
         unsafe { (ENCODE_API.lock_bitstream)(self.encoder.ptr, &mut lock_bitstream_buffer_params) }
-            .result(self.encoder)?;
+            .result(&self.encoder)?;
 
         // Get data.
         let data_ptr = lock_bitstream_buffer_params.bitstreamBufferPtr;
@@ -514,15 +514,15 @@ impl Bitstream<'_> {
     }
 }
 
-impl Drop for Bitstream<'_> {
+impl Drop for Bitstream {
     fn drop(&mut self) {
         unsafe { (ENCODE_API.destroy_bitstream_buffer)(self.encoder.ptr, self.ptr) }
-            .result(self.encoder)
+            .result(&self.encoder)
             .expect("The encoder and bitstream pointers should be valid.");
     }
 }
 
-impl EncoderOutput for Bitstream<'_> {
+impl EncoderOutput for Bitstream {
     fn handle(&mut self) -> *mut c_void {
         self.ptr
     }
@@ -534,8 +534,8 @@ impl EncoderOutput for Bitstream<'_> {
 /// The purpose of this type is similar to [`std::sync::MutexGuard`] -
 /// it automatically unlocks the buffer when the lock goes out of scope.
 #[derive(Debug)]
-pub struct BitstreamLock<'a, 'b> {
-    bitstream: &'a Bitstream<'b>,
+pub struct BitstreamLock<'a> {
+    bitstream: &'a Bitstream,
     data: &'a [u8],
     // statistics and other info
     frame_index: u32,
@@ -545,7 +545,7 @@ pub struct BitstreamLock<'a, 'b> {
     // TODO: other fields
 }
 
-impl BitstreamLock<'_, '_> {
+impl BitstreamLock<'_> {
     /// Getter for the data contained in the output bitstream.
     #[must_use]
     pub fn data(&self) -> &[u8] {
@@ -577,10 +577,10 @@ impl BitstreamLock<'_, '_> {
     }
 }
 
-impl Drop for BitstreamLock<'_, '_> {
+impl Drop for BitstreamLock<'_> {
     fn drop(&mut self) {
         unsafe { (ENCODE_API.unlock_bitstream)(self.bitstream.encoder.ptr, self.bitstream.ptr) }
-            .result(self.bitstream.encoder)
+            .result(&self.bitstream.encoder)
             .expect("The encoder and bitstream pointers should be valid.");
     }
 }
