@@ -71,6 +71,15 @@ impl Drop for Encoder {
 }
 
 impl Encoder {
+    pub fn reconfigure_encoder(
+        &self,
+        mut reconfigure_params: NV_ENC_RECONFIGURE_PARAMS,
+    ) -> Result<(), EncodeError> {
+        unsafe { (ENCODE_API.reconfigure_encoder)(self.ptr, &mut reconfigure_params) }
+            .result(self)?;
+
+        Ok(())
+    }
     /// Create an [`Encoder`] with CUDA as the encode device.
     ///
     /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#cuda).
@@ -449,6 +458,7 @@ impl Encoder {
         self,
         buffer_format: NV_ENC_BUFFER_FORMAT,
         mut initialize_params: EncoderInitParams<'_>,
+        initialize_params: &mut NV_ENC_INITIALIZE_PARAMS,
     ) -> Result<Session, EncodeError> {
         let initialize_params = &mut initialize_params.param;
         let width = initialize_params.encodeWidth;
