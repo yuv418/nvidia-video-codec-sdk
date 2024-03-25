@@ -13,7 +13,7 @@ use crate::sys::nvEncodeAPI::{
     GUID, NVENCAPI_VERSION, NV_ENC_BUFFER_FORMAT, NV_ENC_CONFIG, NV_ENC_CONFIG_VER,
     NV_ENC_DEVICE_TYPE, NV_ENC_INITIALIZE_PARAMS, NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
     NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER, NV_ENC_PRESET_CONFIG, NV_ENC_PRESET_CONFIG_VER,
-    NV_ENC_TUNING_INFO,
+    NV_ENC_RECONFIGURE_PARAMS, NV_ENC_TUNING_INFO,
 };
 
 type Device = Arc<CudaDevice>;
@@ -64,6 +64,15 @@ impl Drop for Encoder {
 }
 
 impl Encoder {
+    pub fn reconfigure_encoder(
+        &self,
+        mut reconfigure_params: NV_ENC_RECONFIGURE_PARAMS,
+    ) -> Result<(), EncodeError> {
+        unsafe { (ENCODE_API.reconfigure_encoder)(self.ptr, &mut reconfigure_params) }
+            .result(self)?;
+
+        Ok(())
+    }
     /// Create an [`Encoder`] with CUDA as the encode device.
     ///
     /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#cuda).
@@ -444,12 +453,11 @@ impl Encoder {
     pub fn start_session(
         self,
         buffer_format: NV_ENC_BUFFER_FORMAT,
-        mut initialize_params: NV_ENC_INITIALIZE_PARAMS,
+        initialize_params: &mut NV_ENC_INITIALIZE_PARAMS,
     ) -> Result<Session, EncodeError> {
         let width = initialize_params.encodeWidth;
         let height = initialize_params.encodeHeight;
-        unsafe { (ENCODE_API.initialize_encoder)(self.ptr, &mut initialize_params) }
-            .result(&self)?;
+        unsafe { (ENCODE_API.initialize_encoder)(self.ptr, initialize_params) }.result(&self)?;
         Ok(Session {
             encoder: Rc::new(self),
             width,
