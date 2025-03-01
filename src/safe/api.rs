@@ -228,6 +228,7 @@ impl EncodeAPI {
         unsafe { NvEncodeAPIGetMaxSupportedVersion(&mut version) }
             .result_without_string()
             .expect("The pointer to the version should be valid.");
+        println!("version {}", version);
         assert_versions_match(version);
 
         // Create empty function buffer.
