@@ -10,6 +10,7 @@ use cudarc::driver::CudaContext;
 
 use super::{api::ENCODE_API, result::EncodeError, session::Session};
 use crate::sys::nvEncodeAPI::{
+<<<<<<< HEAD
     GUID,
     NVENCAPI_VERSION,
     NV_ENC_BUFFER_FORMAT,
@@ -24,6 +25,12 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_PRESET_CONFIG_VER,
     NV_ENC_RECONFIGURE_PARAMS,
     NV_ENC_TUNING_INFO,
+=======
+    GUID, NVENCAPI_VERSION, NV_ENC_BUFFER_FORMAT, NV_ENC_CONFIG, NV_ENC_CONFIG_VER,
+    NV_ENC_DEVICE_TYPE, NV_ENC_INITIALIZE_PARAMS, NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
+    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER, NV_ENC_PRESET_CONFIG, NV_ENC_PRESET_CONFIG_VER,
+    NV_ENC_RECONFIGURE_PARAMS, NV_ENC_TUNING_INFO,
+>>>>>>> ca89e55259e65eb0575cc4f5adf8da1c8fb840eb
 };
 
 /// Entrypoint for the Encoder API.
@@ -81,7 +88,10 @@ impl Encoder {
 
         Ok(())
     }
+<<<<<<< HEAD
 
+=======
+>>>>>>> ca89e55259e65eb0575cc4f5adf8da1c8fb840eb
     /// Create an [`Encoder`] with CUDA as the encode device.
     ///
     /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#cuda).
