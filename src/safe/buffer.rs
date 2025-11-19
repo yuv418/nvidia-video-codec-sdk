@@ -83,7 +83,7 @@ impl Session {
     ///     .create_input_buffer()
     ///     .unwrap();
     /// ```
-    pub fn create_input_buffer(&self) -> Result<Buffer<'_>, EncodeError> {
+    pub fn create_input_buffer(&self) -> Result<Buffer, EncodeError> {
         let mut create_input_buffer_params = NV_ENC_CREATE_INPUT_BUFFER {
             version: NV_ENC_CREATE_INPUT_BUFFER_VER,
             width: self.width,
@@ -153,7 +153,7 @@ impl Session {
     ///     .create_output_bitstream()
     ///     .unwrap();
     /// ```
-    pub fn create_output_bitstream(&self) -> Result<Bitstream<'_>, EncodeError> {
+    pub fn create_output_bitstream(&self) -> Result<Bitstream, EncodeError> {
         let mut create_bitstream_buffer_params = NV_ENC_CREATE_BITSTREAM_BUFFER {
             version: NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
             bitstreamBuffer: ptr::null_mut(),
@@ -464,7 +464,7 @@ impl Bitstream {
     /// # Errors
     ///
     /// Could error if we run out of memory.
-    pub fn lock(&mut self) -> Result<BitstreamLock<'_, '_>, EncodeError> {
+    pub fn lock(&mut self) -> Result<BitstreamLock<'_>, EncodeError> {
         self.lock_inner(true)
     }
 
@@ -481,11 +481,11 @@ impl Bitstream {
     /// An error with [`ErrorKind::LockBusy`](super::ErrorKind::LockBusy) could
     /// be returned if the lock is currently busy. This is a recoverable
     /// error and the client should retry in a few milliseconds.
-    pub fn try_lock(&mut self) -> Result<BitstreamLock<'_, '_>, EncodeError> {
+    pub fn try_lock(&mut self) -> Result<BitstreamLock<'_>, EncodeError> {
         self.lock_inner(false)
     }
 
-    fn lock_inner(&mut self, wait: bool) -> Result<BitstreamLock<'_, '_>, EncodeError> {
+    fn lock_inner(&mut self, wait: bool) -> Result<BitstreamLock<'_>, EncodeError> {
         // Lock bitstream.
         let mut lock_bitstream_buffer_params = NV_ENC_LOCK_BITSTREAM {
             version: NV_ENC_LOCK_BITSTREAM_VER,

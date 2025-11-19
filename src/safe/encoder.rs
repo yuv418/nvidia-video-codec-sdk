@@ -22,6 +22,7 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
     NV_ENC_PRESET_CONFIG,
     NV_ENC_PRESET_CONFIG_VER,
+    NV_ENC_RECONFIGURE_PARAMS,
     NV_ENC_TUNING_INFO,
 };
 
@@ -80,6 +81,7 @@ impl Encoder {
 
         Ok(())
     }
+
     /// Create an [`Encoder`] with CUDA as the encode device.
     ///
     /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#cuda).
@@ -457,8 +459,7 @@ impl Encoder {
     pub fn start_session(
         self,
         buffer_format: NV_ENC_BUFFER_FORMAT,
-        mut initialize_params: EncoderInitParams<'_>,
-        initialize_params: &mut NV_ENC_INITIALIZE_PARAMS,
+        initialize_params: &mut EncoderInitParams,
     ) -> Result<Session, EncodeError> {
         let initialize_params = &mut initialize_params.param;
         let width = initialize_params.encodeWidth;
@@ -478,7 +479,7 @@ impl Encoder {
 /// initialize parameter.
 #[derive(Debug)]
 pub struct EncoderInitParams<'a> {
-    param: NV_ENC_INITIALIZE_PARAMS,
+    pub param: NV_ENC_INITIALIZE_PARAMS,
     marker: std::marker::PhantomData<&'a mut NV_ENC_CONFIG>,
 }
 
