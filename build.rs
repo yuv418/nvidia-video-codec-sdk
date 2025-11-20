@@ -61,10 +61,6 @@ fn main() {
     }
     rerun_if_changed();
 
-    let cuda_root = find_cuda_root()
-        .canonicalize()
-        .expect("Could not canonicalize path.");
-
     // Link to libraries.
     println!("cargo:rustc-link-lib={}", NVENC_LIB.0);
     println!("cargo:rustc-link-lib={}", NVDEC_LIB.0);
